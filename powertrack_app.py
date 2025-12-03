@@ -3334,6 +3334,38 @@ def display_lifter_cards(df: pd.DataFrame, unit_system: UnitSystem):
         st.metric("IPF GL Points", f"{lifter.get('IPF Points', 0):.1f}")
         st.metric("Success Rate", f"{calculate_success_rate(lifter)}%")
 
+    # Quick visual for competition PRs.
+    lift_bars = []
+    for label, key in [("Squat", "Best Squat"), ("Bench", "Best Bench"), ("Deadlift", "Best Deadlift")]:
+        value = lifter.get(key)
+        if value is None or pd.isna(value):
+            continue
+        lift_bars.append(
+            {
+                "Lift": label,
+                "Weight": convert_weight_value(value, unit_system),
+            }
+        )
+    if lift_bars:
+        fig = px.bar(
+            lift_bars,
+            x="Lift",
+            y="Weight",
+            text="Weight",
+            color="Lift",
+            color_discrete_sequence=["#7c3aed", "#2563eb", "#22c55e"],
+        )
+        fig.update_traces(texttemplate="%{text:.1f}")
+        fig.update_layout(
+            title=f"Competition PRs ({UNIT_LABELS[unit_system]})",
+            yaxis_title=f"Weight ({unit_system})",
+            xaxis_title="",
+            showlegend=False,
+            height=320,
+            margin=dict(t=50, b=30, l=10, r=10),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
     accomplishments = achievements_for_lifter(lifter.get('Name', ''))
 
     body_weight = lifter.get('Body Weight (kg)')
