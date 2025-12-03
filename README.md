@@ -1,216 +1,75 @@
-# PowerTrack - Powerlifting Competition Companion
+# PowerTrack – Modern Powerlifting Meet Companion
 
-A comprehensive Streamlit-based application for powerlifting meet management, analysis, and coaching.
+This folder contains the Streamlit app that powers PowerTrack, a professional-grade experience for live and offline powerlifting meets.
 
-## Features
+## Feature Highlights
 
-### For Spectators
-- **Live Scoreboard**: Real-time display of all lifter attempts and results
-- **Competition Standings**: Podium display and full rankings by division
-- **Lifter Analysis**: Detailed performance metrics with visualizations
-- **Record Tracking**: Compare lifts against IPF World Records and American Records
-- **Rules & Guide**: Comprehensive explanation of powerlifting rules and terminology
-
-### For Coaches
-- **Competitor Analysis**: Scout other lifters with strength breakdowns
-- **Attempt Strategy Calculator**: Analyze optimal attempt weights
-- **Division Overview**: Performance distributions and statistics
-- **Real-time Standings**: Track competition positions
-
-### Scoring Systems
-- **DOTS Points**: Modern standard for relative strength comparison
-- **IPF GL Points**: Official IPF ranking system
-- Uses accurate, federation-specific records (IPF, USAPL)
-- Does NOT use deprecated Wilks formula
+- **Live LiftingCast Integration** – ingest any public meet by ID or URL and convert it into the PowerTrack analytics stack.
+- **Recent Meet Picker** – scrape the public LiftingCast feed and load a current meet without searching for IDs.
+- **Live Refresh** – optional auto-refresh and manual refresh controls for liftingcast.com meets with last-updated timestamps.
+- **Role Modes & Access Codes** – Spectator/Coach/Director modes with optional access codes or basic auth for restricted tools.
+- **CSV Friendly** – upload exports from federation software; missing fields are filled with safe defaults.
+- **Spectator Dashboard** – live scoreboard with expandable attempt cards, podium views, and polished theming.
+- **Coach Toolkit** – competitor scouting, attempt calculators, and division analytics to inform game-day calls.
+- **Warm-Up Room MVP** – intelligent countdown, rack scheduling, and color-coded plate math (IPF red/blue/yellow/green/white/black/silver palettes plus collar options).
+- **Record Awareness** – IPF world and USAPL American record dictionaries highlight milestone lifts.
+- **Instant Export** – download the currently active dataset from the sidebar for press releases or archives.
+- **Print-Ready Exports** – one-click podium sheets and attempt cards as PDFs.
+- **Webhooks** – send record/lead/bomb-out alerts to Slack/Discord-compatible webhooks from the sidebar.
+- **Unit Toggle & Learning Aids** – one-click kilograms/pounds switching plus OpenIPF percentile context and referee explainer chips for new viewers.
 
 ## Installation
 
-### Requirements
-- Python 3.8 or higher
-- pip package manager
-
-### Setup
-
-1. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **Run the application:**
+The repository root already includes a top-level `powertrack_app.py` that imports this module, so `streamlit run powertrack_app.py` works from either directory.
+
+## Running Locally
+
 ```bash
 streamlit run powertrack_app.py
 ```
 
-The app will open in your default web browser at `http://localhost:8501`
+Streamlit opens the app at `http://localhost:8501`.
 
-## Usage
+## Data Sources
 
-### Navigation
-Use the sidebar menu to switch between different views:
-- **Meet Overview**: Competition statistics and details
-- **Live Scoreboard**: Detailed attempt-by-attempt results
-- **Standings**: Current rankings and podium positions
-- **Lifter Analysis**: Individual performance breakdowns
-- **Coach Tools**: Strategic analysis and planning
-- **Rules & Guide**: Educational content about powerlifting
+Use the sidebar selector to switch between:
 
-### Mobile/Tablet Compatibility
-PowerTrack is fully responsive and optimized for:
-- Desktop computers
-- iPads and tablets
-- Mobile phones
+1. **Sample Dataset** – Avancus Houston Primetime 2025 meet (bundled CSV).
+2. **LiftingCast Live** – type a meet ID/URL such as `https://liftingcast.com/meets/mclafu3vkkgr`.
+3. **Upload CSV** – drag-and-drop your own meet export (Name, Gender, attempts, totals, referee columns).
 
-The interface automatically adapts to your screen size.
+The most recent dataset is cached for quick navigation. A download button lets you export the active data.
+Prefer a pitch-deck walkthrough? Open `powertrack_demo.html` for a ready-made, Figma-style flow you can drop into investor presentations.
 
-### Data Source
-The app loads meet data from the CSV file. To use with different meets:
-1. Replace the CSV file path in `powertrack_app.py` (line 381)
-2. Ensure the CSV follows the standard powerlifting meet format
+## Warm-Up Room MVP
 
-## Features in Detail
+- **Attempt Countdown** – pick any lifter to see live attempts-out, buffered ETA, alert chips (15/10/5/3 attempts), and a personalized warm-up timeline tied to their opener.
+- **Rack Planner** – assign lifters sharing a rack, align them by flight/platform, and get wave-by-wave order suggestions that minimize plate changes while tracking each ETA.
+- **Calibrated Plate Loader** – plug in any attempt weight to auto-generate per-side plates using standard colors (red 25 kg, blue 20 kg, yellow 15 kg, green 10 kg, white 5 kg, black 2.5 kg, silver 1.25 kg, fractional 0.5 kg/0.25 kg) plus collar toggles (0 kg, 0.25 kg/side, 2.5 kg/side). A bar-sleeve visualization shows the stack exactly how it should look on the platform.
 
-### Meet Overview
-- Total athlete count
-- Gender distribution
-- Average performance metrics
-- Meet details and federation info
+## Customising
 
-### Live Scoreboard
-- Filter by gender
-- Sort by place, total, DOTS, or IPF points
-- Expandable athlete cards with:
-  - Personal information
-  - All 9 attempts (squat, bench, deadlift)
-  - Success/failure indicators
-  - Performance points
+- Update record dictionaries near the top of `powertrack_app.py`.
+- Adjust the Streamlit theme via `.streamlit/config.toml` at the repository root.
+- Extend `liftingcast_loader.py` if you want to support additional live data sources.
+- Tailor the `OPENIPF_PERCENTILES` and `REFEREE_HINTS` structures inside `powertrack_app.py` to match your federation’s data snapshot and coaching language.
+- Optional access controls: set `POWERTRACK_BASIC_AUTH=user:pass` to gate the app, or `POWERTRACK_COACH_CODE` / `POWERTRACK_DIRECTOR_CODE` to lock those role views. Pre-set `POWERTRACK_WEBHOOK_URL` to avoid pasting your Slack/Discord hook each session.
 
-### Competition Standings
-- Separate tabs for male and female divisions
-- Podium display (gold, silver, bronze)
-- Complete rankings table
-- DOTS and IPF GL points for each lifter
+## Deployment Ideas
 
-### Lifter Analysis
-- Personal profile and stats
-- Visual lift breakdown chart
-- Attempt success rate calculation
-- Record comparison with progress bars
-- Shows proximity to world and American records
+- **Streamlit Cloud** – set the entry point to `powertrack_app.py`.
+- **Heroku / Render** – add a `Procfile` with `streamlit run powertrack_app.py`.
+- **Containers/Cloud VMs** – install dependencies and expose port 8501.
 
-### Coach Tools
+## Need Help?
 
-#### Competitor Analysis
-- Top 5 lifters in each division
-- Strength analysis (best lifts)
-- Lift distribution pie charts
-- Success rate calculations
+- Quick orientation: `QUICKSTART.md`
+- Detailed roadmap and positioning: repository root `README.md`
+- Formulae and calculations: `scoring.py`
+- LiftingCast ingestion details: `liftingcast_loader.py`
 
-#### Attempt Strategy
-- Calculate optimal attempt weights
-- Position analysis
-- Success probability estimates
-- Strategic recommendations
-
-#### Division Overview
-- Total distribution histograms
-- DOTS distribution histograms
-- Average lift statistics
-
-### Rules & Guide
-
-#### Comprehensive coverage of:
-- Squat execution rules
-- Bench press rules
-- Deadlift rules
-- Referee decision system
-- Scoring formulas (DOTS, IPF GL)
-- Common powerlifting terminology
-
-## Technical Details
-
-### Technologies Used
-- **Streamlit**: Web application framework
-- **Pandas**: Data processing and analysis
-- **Plotly**: Interactive visualizations
-- **NumPy**: Numerical computations
-
-### Record Data Sources
-- IPF World Records from goodlift.info
-- USAPL American Records from official sources
-- Records updated as of October 2025
-
-### Performance Points
-- **DOTS (Deviation from Optimal Total Strength)**: Current standard
-- **IPF GL Points**: IPF-specific ranking formula
-- **Glossbrenner**: Alternative relative strength metric
-
-## Customization
-
-### Adding New Meets
-To use PowerTrack with different meet data:
-
-1. Ensure your CSV has these columns:
-   - Name, Gender, Body Weight (kg)
-   - Squat 1-3, Best Squat
-   - Bench 1-3, Best Bench
-   - Deadlift 1-3, Best Deadlift
-   - Total, Dots Points, IPF Points
-   - Referee decision columns (S1HRef, B1HRef, D1HRef, etc.)
-
-2. Update the CSV path in the script
-
-### Updating Records
-To update world or American records:
-1. Locate the record dictionaries (lines 46-113)
-2. Update values with current records
-3. Add new weight classes if needed
-
-## Troubleshooting
-
-### App won't start
-- Verify all dependencies are installed
-- Check Python version (3.8+)
-- Ensure CSV file path is correct
-
-### Data not displaying
-- Verify CSV format matches expected structure
-- Check for missing required columns
-- Ensure numeric data is properly formatted
-
-### Mobile display issues
-- Clear browser cache
-- Ensure responsive design CSS is loading
-- Try landscape orientation for tablets
-
-## Project Background
-
-PowerTrack was developed based on comprehensive research of existing powerlifting software:
-- **GoodLift**: Official IPF competition management
-- **LiftingCast**: USAPL meet management platform
-- **OpenPowerlifting**: Historical data archive
-
-The app combines real-time meet data with historical context to enhance the experience for spectators, athletes, and coaches.
-
-## Future Enhancements
-
-Potential features for future versions:
-- Live data integration with meet software APIs
-- Push notifications for favorite lifters
-- Predictive modeling for attempt success
-- Social sharing of results
-- Multi-meet comparison
-- Training analytics
-- Olympic weightlifting support
-
-## Support
-
-For issues, questions, or feature requests, please refer to the project documentation or contact the development team.
-
-## License
-
-This application is designed for use at powerlifting competitions and meets. Ensure compliance with federation rules and data privacy regulations when using with live meet data.
-
----
-
-**PowerTrack v1.0** - Professional Powerlifting Meet Companion
-Built with Streamlit | Optimized for all devices | Federation-accurate records
+Enjoy delivering a polished, data-rich powerlifting experience with PowerTrack!
