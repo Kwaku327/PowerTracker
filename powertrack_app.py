@@ -5,6 +5,7 @@ import os
 import re
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, Literal, List
 
@@ -2723,10 +2724,24 @@ def ensure_role_access(role: str) -> bool:
 
 
 def format_timestamp(ts: Optional[pd.Timestamp]) -> str:
-    if ts is None or pd.isna(ts):
+    """Format a timestamp safely, localizing to the current timezone."""
+    if ts is None:
         return "—"
-    localized = ts.tz_localize("UTC") if ts.tzinfo is None else ts
-    return localized.astimezone().strftime("%b %d, %H:%M:%S")
+    if not isinstance(ts, (pd.Timestamp, datetime)):
+        ts = pd.to_datetime(ts, errors="coerce")
+    if ts is None or (isinstance(ts, pd.Timestamp) and pd.isna(ts)):
+        return "—"
+
+    if isinstance(ts, pd.Timestamp):
+        if ts.tzinfo is None:
+            ts = ts.tz_localize("UTC")
+        ts = ts.to_pydatetime()
+
+    # datetime path
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    local_tz = datetime.now().astimezone().tzinfo or timezone.utc
+    return ts.astimezone(local_tz).strftime("%b %d, %H:%M:%S")
 
 
 def refresh_active_liftingcast_dataset() -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
