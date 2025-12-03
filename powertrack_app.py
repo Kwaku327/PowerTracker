@@ -1304,6 +1304,8 @@ def _evaluate_with_openipf_reference(
         "threshold_value": threshold_value,
         "record_note": None,
         "lift_display": lift_display,
+        "percentile": percentile,
+        "median_value": stats.median,
     }
 
 
@@ -1345,6 +1347,8 @@ def _evaluate_from_percentile_table(
         "threshold_value": None,
         "record_note": None,
         "lift_display": lift_display,
+        "percentile": None,
+        "median_value": None,
     }
 
     if not percentile_data:
@@ -1422,6 +1426,8 @@ def _evaluate_from_percentile_table(
                 "threshold_value": threshold_value,
                 "record_note": None,
                 "lift_display": lift_display,
+                "percentile": None,
+                "median_value": median,
             }
 
     if median:
@@ -1438,6 +1444,8 @@ def _evaluate_from_percentile_table(
             "threshold_value": median,
             "record_note": None,
             "lift_display": lift_display,
+            "percentile": None,
+            "median_value": median,
         }
 
     return result
@@ -3388,6 +3396,57 @@ def display_lifter_cards(df: pd.DataFrame, unit_system: UnitSystem):
             unit_system,
         )
         percentile_profiles[discipline] = profile
+
+    # Visualize PRs side-by-side with class median plus percentile labels.
+    bar_rows: List[Dict[str, object]] = []
+    for discipline in primary_disciplines:
+        best_value = lifter.get(DISCIPLINE_MAP[discipline][1])
+        if best_value is None or pd.isna(best_value):
+            continue
+        profile = percentile_profiles.get(discipline, {})
+        percentile = profile.get("percentile")
+        percentile_text = f"{percentile:.1f}th pct" if percentile is not None else "—"
+        athlete_weight = convert_weight_value(best_value, unit_system)
+        bar_rows.append(
+            {
+                "Lift": discipline,
+                "Series": "Athlete",
+                "Weight": athlete_weight,
+                "Text": f"{athlete_weight:.1f} {unit_system} • {percentile_text}",
+            }
+        )
+        median_value = profile.get("median_value")
+        if median_value is not None and not pd.isna(median_value):
+            median_weight = convert_weight_value(median_value, unit_system)
+            bar_rows.append(
+                {
+                    "Lift": discipline,
+                    "Series": "Class Median",
+                    "Weight": median_weight,
+                    "Text": f"{median_weight:.1f} {unit_system} • median",
+                }
+            )
+
+    if bar_rows:
+        fig = px.bar(
+            bar_rows,
+            x="Lift",
+            y="Weight",
+            color="Series",
+            text="Text",
+            barmode="group",
+            color_discrete_map={"Athlete": "#7c3aed", "Class Median": "#94a3b8"},
+        )
+        fig.update_traces(texttemplate="%{text}")
+        fig.update_layout(
+            title=f"Competition PRs vs. {weight_class_cat} median ({UNIT_LABELS[unit_system]})",
+            yaxis_title=f"Weight ({unit_system})",
+            xaxis_title="",
+            showlegend=True,
+            height=360,
+            margin=dict(t=60, b=30, l=10, r=10),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
     signature_profile = min(
         percentile_profiles.values(),
