@@ -896,22 +896,9 @@ class OpenIPFReferenceData:
 
 def _infer_weight_class_value(bodyweight: Optional[float], weight_class_text: Optional[str]) -> Optional[float]:
     """
-    Derive a numeric proxy for weight class.
-    Preference order: explicit class text (e.g., '83', '83+', '84kg') then bodyweight.
-    '+' classes are mapped above the top boundary so they fall into the super class bucket.
+    Derive a numeric proxy for weight class using actual body weight.
+    We intentionally ignore provided class text to normalize into current IPF classes.
     """
-    if weight_class_text is not None and not pd.isna(weight_class_text):
-        text = str(weight_class_text)
-        match = re.search(r"\d+(?:\.\d+)?", text)
-        if match:
-            try:
-                value = float(match.group())
-                if "+" in text:
-                    return value + 100.0  # force into the heaviest class bucket
-                return value
-            except ValueError:
-                pass
-
     if bodyweight is not None and not pd.isna(bodyweight):
         return float(bodyweight)
     return None
