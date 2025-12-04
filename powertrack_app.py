@@ -3062,8 +3062,13 @@ def display_meet_overview(df, metadata, unit_system: UnitSystem):
         st.metric("Female Athletes", female_count)
     
     with col4:
-        avg_total = df['Total'].mean()
-        st.metric("Average Total", format_weight_display(avg_total, unit_system))
+        avg_dots = df['Dots Points'].mean()
+        st.metric("Average DOTS", f"{avg_dots:.1f}")
+
+    col5, col6, _ = st.columns(3)
+    with col5:
+        avg_gl = df['IPF Points'].mean()
+        st.metric("Average IPF GL", f"{avg_gl:.1f}")
     
     # Competition details
     st.subheader("Competition Details")
@@ -4258,20 +4263,19 @@ def display_rules_guide():
         col1, col2 = st.columns(2)
         
         with col1:
-            st.write("**White Light** ✓")
-            st.write("- Good lift")
-            st.write("- Lift meets all technical requirements")
+            st.write("**White Lights (✓)**")
+            st.write("- Lift satisfied all technical rules and commands.")
+            st.write("- 2 of 3 (or 3 of 3) whites = good lift.")
             
             st.write("")
-            st.write("**Red Light** ✗")
-            st.write("- Failed lift")
-            st.write("- One or more technical requirements not met")
+            st.write("**Red Lights (✗)**")
+            st.write("- Failed lift; see colored cards for why.")
         
         with col2:
-            st.write("**Card Colors Indicate Specific Infractions:**")
-            st.write("- **Blue Card:** Depth or lockout issue")
-            st.write("- **Red Card:** Major technical violation")
-            st.write("- **Yellow Card:** Minor technical violation")
+            st.write("**Card Colors (IPF 2025, Classic/Equipped):**")
+            st.write("- **Red Card:** Commands missed (start/rack/down), bar not motionless at chest/shoulders, downward bar movement in squat/bench, supporting on thighs in deadlift, stepping/foot movement, double bounce, dumping bar.")
+            st.write("- **Blue Card:** Squat depth not reached; not standing erect/locked knees; heaving or sinking in bench; soft knee/shoulder lockout in deadlift.")
+            st.write("- **Yellow Card:** Contact with rack/uprights after start, uneven lockout, bar not touching chest (bench) or touching belt (deadlift), equipment/strap infractions, any other technical fault not covered above.")
 
         st.markdown("---")
         st.subheader("Real-World Case Studies")
