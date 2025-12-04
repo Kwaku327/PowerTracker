@@ -3119,6 +3119,56 @@ def display_live_scoreboard(df, unit_system: UnitSystem):
     else:  # IPF Points
         filtered_df = filtered_df.sort_values('IPF Points', ascending=False)
 
+    # Hero leaderboard cards (top 8) before detailed expanders.
+    top_df = filtered_df.head(8).copy()
+    top_df["TotalDisplay"] = convert_series_for_display(top_df.get("Total", pd.Series(dtype=float)), unit_system)
+    top_df["DotsDisplay"] = top_df.get("Dots Points", pd.Series(dtype=float)).round(1)
+    leaderboard_rows = []
+    for _, row in top_df.iterrows():
+        leaderboard_rows.append(
+            {
+                "place": int(row.get("Place", 0)),
+                "name": row.get("Name", "Unknown"),
+                "class": row.get("Weight Class", "N/A"),
+                "total": row.get("TotalDisplay", "—"),
+                "dots": row.get("DotsDisplay", "—"),
+            }
+        )
+
+    if leaderboard_rows:
+        st.markdown("### Podium Leaderboard")
+        card_html = ["<div style='display:flex;flex-direction:column;gap:10px;'>"]
+        bg_colors = ["linear-gradient(120deg,#fbbf24,#f59e0b)", "linear-gradient(120deg,#cbd5f5,#a5b4fc)", "linear-gradient(120deg,#c4b5fd,#818cf8)"]
+        for idx, entry in enumerate(leaderboard_rows):
+            color = bg_colors[entry["place"]-1] if entry["place"] in {1,2,3} and entry["place"]-1 < len(bg_colors) else "linear-gradient(120deg,#0ea5e9,#2563eb)"
+            card_html.append(
+                f"""
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    padding:12px 14px;
+                    border-radius:14px;
+                    background:{color};
+                    color:#0f172a;
+                    box-shadow:0 12px 28px rgba(0,0,0,0.25);
+                    border:1px solid rgba(255,255,255,0.25);
+                ">
+                    <div style="font-weight:800;font-size:1rem;">#{entry['place']}</div>
+                    <div style="flex:1;margin-left:10px;">
+                        <div style="font-weight:700;font-size:1.05rem;">{entry['name']}</div>
+                        <div style="font-size:0.9rem;opacity:0.9;">Class {entry['class']}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700;font-size:1.05rem;">{entry['total']}</div>
+                        <div style="font-size:0.9rem;opacity:0.9;">DOTS {entry['dots']}</div>
+                    </div>
+                </div>
+                """
+            )
+        card_html.append("</div>")
+        st.markdown("".join(card_html), unsafe_allow_html=True)
+
     def render_attempt_row(
         result: Optional[str],
         label: str,
