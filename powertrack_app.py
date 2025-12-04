@@ -935,11 +935,8 @@ def _build_openipf_reference(df: pd.DataFrame, csv_path: Path) -> Optional[OpenI
     if df.empty:
         return None
 
-    latest_date = df["Date"].max()
-    cutoff_date = latest_date - pd.DateOffset(years=20)
-    df = df[df["Date"] >= cutoff_date]
-    if df.empty:
-        return None
+    # Use all available years in the CSV (no recency cutoff).
+    cutoff_date = df["Date"].min()
 
     df["Gender"] = np.where(df["Sex"] == "M", "MALE", "FEMALE")
     resolved_weight = df.apply(
@@ -958,7 +955,9 @@ def _build_openipf_reference(df: pd.DataFrame, csv_path: Path) -> Optional[OpenI
     for column in ["Best3SquatKg", "Best3BenchKg", "Best3DeadliftKg", "TotalKg"]:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
-    stats_map: Dict[str, Dict[str, Dict[str, LiftPercentileStats]]] = defaultdict(lambda: defaultdict(dict))
+    stats_map: Dict[str, Dict[str, Dict[str, Dict[str, LiftPercentileStats]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(dict))
+    )
     lift_columns = {
         "Squat": "Best3SquatKg",
         "Bench": "Best3BenchKg",
@@ -967,17 +966,17 @@ def _build_openipf_reference(df: pd.DataFrame, csv_path: Path) -> Optional[OpenI
     }
 
     for lift_name, column in lift_columns.items():
-        valid = df[["Gender", "WeightClassCategory", column]].dropna()
+        valid = df[["Gender", "WeightClassCategory", "EquipType", column]].dropna()
         if valid.empty:
             continue
-        grouped = valid.groupby(["Gender", "WeightClassCategory"])[column]
-        for (gender, weight_class), series in grouped:
+        grouped = valid.groupby(["Gender", "WeightClassCategory", "EquipType"])[column]
+        for (gender, weight_class, equip), series in grouped:
             values = series.to_numpy(dtype=np.float32)
             count = len(values)
             if count < OPENIPF_MIN_SAMPLE_SIZE:
                 continue
             sorted_values = np.sort(values)
-            stats_map[gender][weight_class][lift_name] = LiftPercentileStats(
+            stats_map[gender][weight_class][equip][lift_name] = LiftPercentileStats(
                 count=count,
                 mean=float(np.mean(sorted_values)),
                 median=float(np.median(sorted_values)),
@@ -992,7 +991,10 @@ def _build_openipf_reference(df: pd.DataFrame, csv_path: Path) -> Optional[OpenI
         return None
 
     stats_dict = {
-        gender: {weight_class: dict(lifts) for weight_class, lifts in weight_map.items()}
+        gender: {
+            weight_class: {equip: dict(lifts) for equip, lifts in equip_map.items()}
+            for weight_class, equip_map in weight_map.items()
+        }
         for gender, weight_map in stats_map.items()
     }
 
@@ -1036,7 +1038,9 @@ def load_openipf_reference_data(csv_override: Optional[str] = None) -> Optional[
 
     df = df[df["Event"] == "SBD"]
     df = df[df["Sex"].isin(["M", "F"])]
-    df = df[df["Equipment"].str.lower().eq("raw")]
+
+    # Split classic vs equipped; build stats for both so the app can distinguish.
+    df["EquipType"] = np.where(df["Equipment"].str.lower().eq("raw"), "RAW", "EQUIPPED")
     if df.empty:
         return None
 
