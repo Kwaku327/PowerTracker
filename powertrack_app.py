@@ -895,17 +895,26 @@ class OpenIPFReferenceData:
 
 
 def _infer_weight_class_value(bodyweight: Optional[float], weight_class_text: Optional[str]) -> Optional[float]:
+    """
+    Derive a numeric proxy for weight class.
+    Preference order: explicit class text (e.g., '83', '83+', '84kg') then bodyweight.
+    '+' classes are mapped above the top boundary so they fall into the super class bucket.
+    """
+    if weight_class_text is not None and not pd.isna(weight_class_text):
+        text = str(weight_class_text)
+        match = re.search(r"\d+(?:\.\d+)?", text)
+        if match:
+            try:
+                value = float(match.group())
+                if "+" in text:
+                    return value + 100.0  # force into the heaviest class bucket
+                return value
+            except ValueError:
+                pass
+
     if bodyweight is not None and not pd.isna(bodyweight):
         return float(bodyweight)
-    if weight_class_text is None or pd.isna(weight_class_text):
-        return None
-    match = re.search(r"\d+(?:\.\d+)?", str(weight_class_text))
-    if not match:
-        return None
-    try:
-        return float(match.group())
-    except ValueError:
-        return None
+    return None
 
 
 def _resolve_openipf_csv_path(csv_override: Optional[str] = None) -> Optional[Path]:
@@ -927,7 +936,7 @@ def _build_openipf_reference(df: pd.DataFrame, csv_path: Path) -> Optional[OpenI
         return None
 
     latest_date = df["Date"].max()
-    cutoff_date = latest_date - pd.DateOffset(years=10)
+    cutoff_date = latest_date - pd.DateOffset(years=20)
     df = df[df["Date"] >= cutoff_date]
     if df.empty:
         return None
@@ -1276,16 +1285,17 @@ def _evaluate_with_openipf_reference(
     median_display = format_weight_display(stats.median, unit_system)
     percentile_label = f"{percentile:.1f}th percentile"
 
+    peer_scope = f"{gender.title()} lifters in the {weight_class} class"
     if count_at_or_above <= 0:
-        peer_sentence = "No recorded Raw SBD lifter in this dataset has matched this lift yet."
+        peer_sentence = f"No recorded Raw SBD {peer_scope} in this dataset has matched this lift yet."
     elif percentile >= 50:
         peer_sentence = (
-            f"Only {count_at_or_above:,} of {total_count:,} tracked lifters "
+            f"Only {count_at_or_above:,} of {total_count:,} tracked {peer_scope} "
             f"from {period_label} have lifted this much weight or more."
         )
     else:
         peer_sentence = (
-            f"About {count_at_or_above:,} of {total_count:,} lifters "
+            f"About {count_at_or_above:,} of {total_count:,} {peer_scope} "
             f"from {period_label} are already at or above this mark."
         )
 
