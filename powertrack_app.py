@@ -517,8 +517,8 @@ DEFAULT_ROLE = "Spectator"
 ROLE_PAGE_MAP = {
     "Spectator": [
         "Meet Overview",
-        "Live Scoreboard",
-        "Standings",
+        "Lifter Attempts Breakdown",
+        "Scoreboard",
         "Lifter Cards",
         "Lifter Analysis",
         "Live Simulation",
@@ -527,8 +527,8 @@ ROLE_PAGE_MAP = {
     ],
     "Coach": [
         "Meet Overview",
-        "Live Scoreboard",
-        "Standings",
+        "Lifter Attempts Breakdown",
+        "Scoreboard",
         "Lifter Cards",
         "Lifter Analysis",
         "Warm-Up Room",
@@ -539,8 +539,8 @@ ROLE_PAGE_MAP = {
     ],
     "Director": [
         "Meet Overview",
-        "Live Scoreboard",
-        "Standings",
+        "Lifter Attempts Breakdown",
+        "Scoreboard",
         "Lifter Cards",
         "Lifter Analysis",
         "Warm-Up Room",
@@ -560,12 +560,12 @@ PAGE_COLOR_MAP = {
         "shadow": "0 24px 60px rgba(37, 99, 235, 0.35)",
         "accent": "#a5b4fc",
     },
-    "Live Scoreboard": {
+    "Lifter Attempts Breakdown": {
         "gradient": "linear-gradient(120deg, #4338ca, #1d4ed8)",
         "shadow": "0 24px 60px rgba(29, 78, 216, 0.4)",
         "accent": "#60a5fa",
     },
-    "Standings": {
+    "Scoreboard": {
         "gradient": "linear-gradient(120deg, #312e81, #7c3aed)",
         "shadow": "0 24px 60px rgba(124, 58, 237, 0.32)",
         "accent": "#c4b5fd",
@@ -3087,8 +3087,8 @@ def display_meet_overview(df, metadata, unit_system: UnitSystem):
     )
 
 def display_live_scoreboard(df, unit_system: UnitSystem):
-    """Display live scoreboard with attempt details"""
-    st.header("Live Scoreboard")
+    """Display lifter attempts with a quick leaderboard on top."""
+    st.header("Lifter Attempts Breakdown")
 
     st.markdown(
         "<div class='info-pill'>Tap any lifter to see their full attempt history. "
@@ -3197,12 +3197,7 @@ def display_live_scoreboard(df, unit_system: UnitSystem):
             if hint:
                 st.caption(f"Why red? {hint}")
 
-    st.markdown(
-        "<div class='referee-tip'><strong>Why do some finished lifts still get red lights?</strong> "
-        "Common reasons include missing the squat depth call, beating the bench press press/rack commands, "
-        "or lowering the deadlift before the 'down' signal. Look for the ✗ badge to spot these technical misses.</div>",
-        unsafe_allow_html=True,
-    )
+    st.info("Tap a lifter to expand their attempts. White = good, Red = no lift, Gray = pending.")
 
     for _, row in filtered_df.iterrows():
         bw_display = format_weight_display(row.get('Body Weight (kg)'), unit_system)
@@ -3273,8 +3268,8 @@ def display_live_scoreboard(df, unit_system: UnitSystem):
                 st.write(f"**Best:** {format_weight_display(row['Best Deadlift'], unit_system)}")
 
 def display_standings(df, unit_system: UnitSystem):
-    """Display competition standings by division"""
-    st.header("Competition Standings")
+    """Display competition scoreboard by division"""
+    st.header("Scoreboard")
     
     # Separate by gender
     tab1, tab2 = st.tabs(["Female Division", "Male Division"])
@@ -3488,7 +3483,7 @@ def display_lifter_cards(df: pd.DataFrame, unit_system: UnitSystem):
             barmode="group",
             color_discrete_map={"Athlete": "#7c3aed", "Class Median": "#94a3b8"},
         )
-        fig.update_traces(texttemplate="%{text}")
+        fig.update_traces(texttemplate="%{text}", textfont_size=16)
         fig.update_layout(
             title=f"Competition PRs vs. {weight_class_cat} median ({UNIT_LABELS[unit_system]})",
             yaxis_title=f"Weight ({unit_system})",
@@ -4392,7 +4387,7 @@ def display_rules_guide():
             class_text = highlight_class if pd.notna(highlight_class) else "their division"
             st.markdown(
                 f"<div class='info-pill'>Curious how this applies? In the Avancus Houston Primetime meet, "
-                f"{highlight_name} lifted in the {class_text} class. Toggle to the Live Scoreboard tab "
+                f"{highlight_name} lifted in the {class_text} class. Toggle to the Lifter Attempts Breakdown tab "
                 "and you’ll see every attempt annotated with these referee cues.</div>",
                 unsafe_allow_html=True,
             )
@@ -4570,6 +4565,7 @@ def main():
     include_records = st.sidebar.checkbox("Record pushes", value=True, key="alerts_records")
     include_leads = st.sidebar.checkbox("Tight lead changes", value=True, key="alerts_leads")
     include_bombs = st.sidebar.checkbox("Bomb-out risk", value=True, key="alerts_bombs")
+    in_app_alerts = st.sidebar.checkbox("In-app popups", value=False, key="alerts_in_app")
     alerts_preview = collect_alerts(df, metadata, include_records, include_leads, include_bombs)
     st.sidebar.caption(f"{len(alerts_preview)} alert(s) ready.")
     if st.sidebar.button("Send alerts now", use_container_width=True):
@@ -4582,11 +4578,21 @@ def main():
             st.sidebar.success("Alerts sent.")
         else:
             st.sidebar.error(error_text or "Unable to send alerts.")
+        if in_app_alerts:
+            for alert in alerts_preview:
+                message = alert.get("type", "alert").replace("_", " ").title()
+                if alert.get("lifter"):
+                    message += f" • {alert['lifter']}"
+                if alert.get("value"):
+                    message += f" @ {format_weight_display(alert['value'], unit_system)}"
+                st.toast(message)
 
     st.sidebar.markdown("---")
     st.sidebar.title("Navigation")
     st.sidebar.caption("Color-coded tabs/pages mirror their accent inside the main view.")
-    available_pages = ROLE_PAGE_MAP.get(selected_role, ROLE_PAGE_MAP[DEFAULT_ROLE])
+    # Update page labels for clarity.
+    renamed_pages = [page.replace("Live Scoreboard", "Lifter Attempts Breakdown").replace("Standings", "Scoreboard") for page in ROLE_PAGE_MAP.get(selected_role, ROLE_PAGE_MAP[DEFAULT_ROLE])]
+    available_pages = renamed_pages
     previous_page = st.session_state.get("last_page", available_pages[0])
     if previous_page not in available_pages:
         previous_page = available_pages[0]
@@ -4631,9 +4637,9 @@ def main():
 
     if page == "Meet Overview":
         display_meet_overview(df, metadata, unit_system)
-    elif page == "Live Scoreboard":
+    elif page == "Lifter Attempts Breakdown":
         display_live_scoreboard(df, unit_system)
-    elif page == "Standings":
+    elif page == "Scoreboard":
         display_standings(df, unit_system)
     elif page == "Lifter Cards":
         display_lifter_cards(df, unit_system)
