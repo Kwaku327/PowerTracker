@@ -4351,10 +4351,9 @@ def display_rules_guide():
             **Total:** Sum of best successful squat, bench press, and deadlift
             
             **Placing Tiebreakers (in order):**
-            1. Higher total wins
-            2. If totals are equal: lighter body weight wins
-            3. If both total and body weight equal: earlier weigh-in time wins
-            4. If still tied: lifter with lower lot number wins
+            1. Higher total wins.
+            2. If totals are equal: the lifter who achieved that total first (earlier attempt/round) wins.
+            3. If still tied: lower lot number wins (IPF 2025; bodyweight/scale order are not used).
             
             **Bomb Out:** Failing all three attempts in any lift results in no total 
             and elimination from final rankings.
